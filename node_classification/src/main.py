@@ -2,7 +2,7 @@ import os, time, argparse
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
+import tf_slim as slim
 
 from logger import set_logger
 from config import get_args
@@ -12,7 +12,7 @@ from evaluator import Evaluator
 from models.HATS import HATS
 
 def init_prediction_model(config):
-    with tf.variable_scope("model"):
+    with tf.compat.v1.variable_scope("model"):
         if config.model_type == "HATS":
             model = HATS(config)
     return model
@@ -24,7 +24,7 @@ def main():
     config.num_relations = dataset.num_relations
     config.num_companies = dataset.num_companies
 
-    run_config = tf.ConfigProto()
+    run_config = tf.compat.v1.ConfigProto()
     run_config.gpu_options.allow_growth = True
     model_name = config.model_type
     exp_name = '%s_%s_%s_%s_%s_%s_%s_%s'%(config.data_type, model_name,
@@ -34,13 +34,13 @@ def main():
     if not (os.path.exists(os.path.join(config.save_dir, exp_name))):
         os.makedirs(os.path.join(config.save_dir, exp_name))
 
-    sess = tf.Session(config=run_config)
+    sess = tf.compat.v1.Session(config=run_config)
     model = init_prediction_model(config)
-    init = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
+    init = tf.compat.v1.group(tf.compat.v1.global_variables_initializer(), tf.compat.v1.local_variables_initializer())
     sess.run(init)
 
     def model_summary(logger):
-        model_vars = tf.trainable_variables()
+        model_vars = tf.compat.v1.trainable_variables()
         slim.model_analyzer.analyze_vars(model_vars, print_info=True)
     model_summary(logger)
    
@@ -50,8 +50,8 @@ def main():
     trainer.train()
     
     #Testing
-    loader = tf.train.Saver(max_to_keep=None)
-    loader.restore(sess, tf.train.latest_checkpoint(os.path.join(config.save_dir, exp_name)))
+    loader = tf.compat.v1.train.Saver(max_to_keep=None)
+    loader.restore(sess, tf.compat.v1.train.latest_checkpoint(os.path.join(config.save_dir, exp_name)))
     print("load best evaluation model")
 
     test_loss, report_all, report_topk = evaluator.evaluate(sess, model, dataset, 'test', trainer.best_f1['neighbors'])

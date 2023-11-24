@@ -60,7 +60,6 @@ class GTrainer(BaseTrain):
         _, loss, pred, prob = self.sess.run([self.model.train_step, self.model.cross_entropy,
                                     self.model.prediction, self.model.prob],
                                      feed_dict=feed_dict)
-
         label = np.argmax(y, 1)
 
         return loss, label, pred, prob, rt

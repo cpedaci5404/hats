@@ -46,6 +46,7 @@ class GEvaluator:
             # feed_dict[model.state] = self.state_dict[phase][b_idx]
             loss, pred, prob= sess.run([model.cross_entropy, model.prediction, model.prob],
                                         feed_dict=feed_dict)
+            print(sess.run(model.dropout, feed_dict = feed_dict))
 
             label = np.argmax(y, 1)
             losses.append(loss)
