@@ -38,6 +38,7 @@ class HATS(BaseModel):
             outputs, state = tf.compat.v1.nn.dynamic_rnn(lstm_cell, self.x, dtype=tf.compat.v1.float32)
             state = tf.compat.v1.concat([tf.compat.v1.zeros([1,state[-1][-1].shape[1]]), state[-1][-1]], 0) # zero padding
 
+
         return state
 
     def relation_projection(self, state, rel_idx):

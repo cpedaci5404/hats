@@ -10,6 +10,7 @@ from dataset import StockDataset
 from trainer import Trainer
 from evaluator import Evaluator
 from models.HATS import HATS
+from dp_lstm import dp_lstm
 
 def init_prediction_model(config):
     with tf.compat.v1.variable_scope("model"):
@@ -23,6 +24,10 @@ def main():
     dataset = StockDataset(config)
     config.num_relations = dataset.num_relations
     config.num_companies = dataset.num_companies
+
+    #DP-LSTM Transfer
+
+    dp_lstm_results = dp_lstm(dataset)
 
     run_config = tf.compat.v1.ConfigProto()
     run_config.gpu_options.allow_growth = True

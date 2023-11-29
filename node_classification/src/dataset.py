@@ -3,6 +3,7 @@ import pickle
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+from dp_lstm import dp_lstm
 
 class StockDataset():
     def __init__(self, config):
@@ -52,7 +53,7 @@ class StockDataset():
             raise
         model_phase = math.ceil(self.config.test_phase + self.config.train_proportion)
         if model_phase >= tot_ph:
-            print("Unsuitable test phase model_phase:%d | total_pahse:%d"%(model_phase, tot_ph))
+            print("Unsuitable test phase model_phase:%d | total_phase:%d"%(model_phase, tot_ph))
             raise
         train_size = int(self.config.test_size * self.config.train_proportion) - self.config.dev_size
         test_start_idx = model_phase * self.config.test_size
@@ -83,6 +84,7 @@ class StockDataset():
             self.test_label.append(np.expand_dims(label_df.iloc[test_input_start_idx:test_target_start_idx+self.config.test_size].values,1))
 
         self.num_companies = len(self.train_label)
+
         # Params for normalize
         all_tr_rt = []
         for tr_set in self.train_label:
@@ -168,7 +170,7 @@ class StockDataset():
             mv_class = self.classify(mv_percent)
             if not mv_class: # not valid data sample
                 continue
-            # Use feature untiil one day before
+            # Use feature until one day before
             window = data[w_start:w_start+lookback]
             if len(self.scaling_feats):
                 non_cols = list(set([i for i in range(len(self.feature_list))]) - set(self.scaling_feats))

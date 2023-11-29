@@ -55,6 +55,7 @@ class Trainer(BaseTrain):
         report_topk = [np.around(np.array(pred_rates_k).mean(0),decimals=4), np.mean(accs_k), np.mean(cpt_accs_k), np.mean(mac_f1_k), np.mean(mic_f1_k), np.mean(exp_rts_k)]
         loss = np.mean(losses)
         cur_it = self.model.global_step_tensor.eval(self.sess)
+
         return loss, report_all, report_topk
 
 

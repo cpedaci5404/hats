@@ -15,10 +15,10 @@ def get_args():
     argp.add_argument('--load', type=str, default='./out')
 
     # Data Control
-    argp.add_argument('--dev_size', type=int, default=50)
-    argp.add_argument('--test_size', type=int, default=100)
+    argp.add_argument('--dev_size', type=int, default=148)
+    argp.add_argument('--test_size', type=int, default=250)
     argp.add_argument('--test_phase', type=int)
-    argp.add_argument('--train_proportion', type=float, default=3.0)
+    argp.add_argument('--train_proportion', type=float, default=5.0)
     argp.add_argument('--feature_list', nargs='+', type=str, help='return, volume, close, technical')
     argp.add_argument('--num_relations', type=int, default=0)
     argp.add_argument('--num_companies', type=int, default=0)
@@ -35,7 +35,7 @@ def get_args():
     argp.add_argument('--mode', type=str, default='train', choices=['train', 'test'])
     argp.add_argument('--lookback', type=int, default=50)
     argp.add_argument('--batch_size', type=int, default=32)
-    argp.add_argument('--n_epochs', type=int, default=300)
+    argp.add_argument('--n_epochs', type=int, default=10)
     argp.add_argument('--eval_step', type=int, default=1)
     argp.add_argument('--print_step', type=int, default=10)
     argp.add_argument('--early_stop_type', type=str, default='acc', choices=['acc', 'loss', 'f1', 'mcc'])
@@ -47,7 +47,7 @@ def get_args():
     argp.add_argument('--feat_att', action='store_true', default=False)
     argp.add_argument('--rel_att', action='store_true', default=False)
     argp.add_argument('--num_layer', type=int, default=1)
-    argp.add_argument('--inference_model', type=str, default='lstm')
+    argp.add_argument('--inference_model', type=str, default='lstm', choices = ['lstm', 'dp_lstm'])
 
     ## optimizer
     argp.add_argument('--optimizer', type=str, default='Adam')
