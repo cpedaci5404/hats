@@ -71,86 +71,18 @@ def dp_lstm(data):
     drop_out=0
     val_mse_list = []
     test_mse_list = []
+    window_dict = {}
 
-    data_windows = []
-    len_test = len(df_test_noise)
-    for i in range(len_test - test_sequence_length):
-        data_windows.append(df_test_noise[i:i+test_sequence_length])
+    for window in range(len(df_train_noise)):
 
-    data_windows = np.array(data_windows).astype(float)
-    y_test_ori = data_windows[:, -1, [0]]
-
-    val_data_windows = []
-    len_val = len(df_val_noise)
-    for i in range(len_val - val_sequence_length):
-        val_data_windows.append(df_val_noise[i:i+val_sequence_length])
-
-    val_data_windows = np.array(val_data_windows).astype(float)
-    y_val_ori = val_data_windows[:, -1, [0]]
-
-    train_data_windows = []
-    len_train = len(df_train_noise)
-    for i in range(len_train - train_sequence_length):
-        train_data_windows.append(df_train_noise[i:i+train_sequence_length])
-    
-    model_train_df = np.array(train_data_windows).astype(float)
-
-    # for stock in range(len(model_train_df)):
-    model_label = model_train_df[:, -1, [0]]
-    window_data=data_windows
-    win_num=window_data.shape[0]
-    col_num=window_data.shape[2]
-    normalised_data = []
-    record_min=[]
-    record_max=[]
-    for win_i in range(0,win_num):
-        normalised_window = []
-        for col_i in range(0,col_num):#col_num):
-            temp_col=window_data[win_i,:,col_i]
-            temp_min=min(temp_col)
-            if col_i==0:
-                record_min.append(temp_min)#record min
-            temp_col=temp_col-temp_min
-            temp_max=max(temp_col)
-            if col_i==0:
-                record_max.append(temp_max)#record max
-            temp_col=temp_col/temp_max
-            normalised_window.append(temp_col)
-        for col_i in range(1,col_num):
-            temp_col=window_data[win_i,:,col_i]
-            normalised_window.append(temp_col)
-        normalised_window = np.array(normalised_window).T
-        normalised_data.append(normalised_window)
-    normalised_data=np.array(normalised_data)
-
-    val_window_data=val_data_windows
-    val_win_num=val_window_data.shape[0]
-    val_col_num=val_window_data.shape[2]
-    val_normalised_data = []
-    val_record_min=[]
-    val_record_max=[]
-
-    for win_i in range(0,val_win_num):
-        normalised_window = []
-        for col_i in range(0,col_num):#col_num):
-            temp_col=val_window_data[win_i,:,col_i]
-            temp_min=min(temp_col)
-            if col_i==0:
-                val_record_min.append(temp_min)#record min
-            temp_col=temp_col-temp_min
-            temp_max=max(temp_col)
-            if col_i==0:
-                val_record_max.append(temp_max)#record max
-            temp_col=temp_col/temp_max
-            normalised_window.append(temp_col)
-        for col_i in range(1,val_col_num):
-            temp_col=val_window_data[win_i,:,col_i]
-            normalised_window.append(temp_col)
-        normalised_window = np.array(normalised_window).T
-        val_normalised_data.append(normalised_window)
-    val_normalised_data=np.array(val_normalised_data)
-
-
+        train_data_windows = []
+        len_train = len(df_train_noise)
+        for i in range(len_train - train_sequence_length):
+            train_data_windows.append(df_train_noise[i:i+train_sequence_length])
+        
+        model_train_df = np.array(train_data_windows).astype(float)
+        model_label = model_train_df[:, -1, [0]]
+        window_dict[window] = (model_train_df, model_label)
 
     # LSTM MODEL
     model = Sequential()
@@ -163,106 +95,179 @@ def dp_lstm(data):
     # Compile model
     model.compile(loss='mean_squared_error',
                     optimizer='adam')
-    
-    # Fit the model
-    model.fit(model_train_df, model_label, epochs=epochs,batch_size=batch_size)
+        # Fit the model
+    for stock in range(len(df_train_noise)):
+        model.fit(window_dict[stock][0], window_dict[stock][1],batch_size=batch_size)
 
     # In[16]:
 
 
     #multi sequence predict
-    model_data = data_windows
-    prediction_seqs = []
-    window_size=test_sequence_length
-    pre_win_num=int(len(model_data)/prediction_len)
-    for i in range(0,pre_win_num):
-        curr_frame = model_data[i*prediction_len]
-        predicted = []
-        for _ in range(0,prediction_len):
-            temp = model.predict(curr_frame[newaxis,:,:])[0]
-            predicted.append(temp)
-            curr_frame = curr_frame[1:]
-            curr_frame = np.insert(curr_frame, [window_size - 2], predicted[-1], axis=0)
-        prediction_seqs.append(predicted)
+    for stock in range(len(df_test_noise)):
+        data_windows = []
+        len_test = len(df_test_noise)
+        for i in range(len_test - test_sequence_length):
+            data_windows.append(df_test_noise[i:i+test_sequence_length])
 
-    #de_predicted
-    de_predicted=[]
-    len_pre_win=int(len(model_data)/prediction_len)
-    len_pre=prediction_len
+        data_windows = np.array(data_windows).astype(float)
+        y_test_ori = data_windows[:, -1, [0]]
 
-    m=0
-    for i in range(0,len_pre_win):
-        for j in range(0,len_pre):
-            de_predicted.append(prediction_seqs[i][j][0]*record_max[m]+record_min[m])
-            m=m+1
+            # for stock in range(len(model_train_df)):
+        window_data=data_windows
+        win_num=window_data.shape[0]
+        col_num=window_data.shape[2]
+        normalised_data = []
+        record_min=[]
+        record_max=[]
+        for win_i in range(0,win_num):
+            normalised_window = []
+            for col_i in range(0,col_num):#col_num):
+                temp_col=window_data[win_i,:,col_i]
+                temp_min=min(temp_col)
+                if col_i==0:
+                    record_min.append(temp_min)#record min
+                temp_col=temp_col-temp_min
+                temp_max=max(temp_col)
+                if col_i==0:
+                    record_max.append(temp_max)#record max
+                temp_col=temp_col/temp_max
+                normalised_window.append(temp_col)
+            for col_i in range(1,col_num):
+                temp_col=window_data[win_i,:,col_i]
+                normalised_window.append(temp_col)
+            normalised_window = np.array(normalised_window).T
+            normalised_data.append(normalised_window)
+        normalised_data=np.array(normalised_data)
 
-    error = []
-    diff = np.asarray(data.dev_label[0]).shape[0]-prediction_len*pre_win_num
-    
-    for i in range(y_test_ori.shape[0]-diff):
-        error.append(y_test_ori[i,] - de_predicted[i])
+
+        model_data = data_windows
+        prediction_seqs = []
+        window_size=test_sequence_length
+        pre_win_num=int(len(model_data)/prediction_len)
+        for i in range(0,pre_win_num):
+            curr_frame = model_data[i*prediction_len]
+            predicted = []
+            for _ in range(0,prediction_len):
+                temp = model.predict(curr_frame[newaxis,:,:])[0]
+                predicted.append(temp)
+                curr_frame = curr_frame[1:]
+                curr_frame = np.insert(curr_frame, [window_size - 2], predicted[-1], axis=0)
+            prediction_seqs.append(predicted)
+
+        #de_predicted
+        de_predicted=[]
+        len_pre_win=int(len(model_data)/prediction_len)
+        len_pre=prediction_len
+
+        m=0
+        for i in range(0,len_pre_win):
+            for j in range(0,len_pre):
+                de_predicted.append(prediction_seqs[i][j][0]*record_max[m]+record_min[m])
+                m=m+1
+
+        error = []
+        diff = np.asarray(data.dev_label[stock]).shape[0]-prediction_len*pre_win_num
         
-    squaredError = []
-    absError = []
-    for val in error:
-        squaredError.append(val * val) 
-        absError.append(abs(val))
+        for i in range(y_test_ori.shape[0]-diff):
+            error.append(y_test_ori[i,] - de_predicted[i])
+            
+        squaredError = []
+        absError = []
+        for val in error:
+            squaredError.append(val * val) 
+            absError.append(abs(val))
 
-    error_percent=[]
-    for i in range(len(error)):
-        val= error[i] / ((y_test_ori[i,] + de_predicted[i]) / 2)
-        new_val=abs(val)
-        error_percent.append(new_val)
+        error_percent=[]
+        for i in range(len(error)):
+            val= error[i] / ((y_test_ori[i,] + de_predicted[i]) / 2)
+            new_val=abs(val)
+            error_percent.append(new_val)
 
-    test_MSE =sum(squaredError) / len(squaredError)
-    print('test_MSE: ', test_MSE)
-    #test_mse_list.append(test_MSE)
+        test_MSE =sum(squaredError) / len(squaredError)
+        test_mse_list.append(test_MSE)
 
-    model_data = val_data_windows
-    prediction_seqs = []
-    window_size = val_sequence_length
-    pre_win_num = int(len(model_data)/prediction_len)
+    for stock in range(len(df_val_noise)):
 
-    for i in range(0,pre_win_num):
-        curr_frame = model_data[i*prediction_len]
-        predicted = []
-        for j in range(0,prediction_len):
-            temp = model.predict(curr_frame[newaxis,:,:])[0]
-            predicted.append(temp)
-            curr_frame = curr_frame[1:]
-            curr_frame = np.insert(curr_frame, [window_size-2], predicted[-1], axis=0)
-        prediction_seqs.append(predicted)
+        val_data_windows = []
+        len_val = len(df_val_noise)
+        for i in range(len_val - val_sequence_length):
+            val_data_windows.append(df_val_noise[i:i+val_sequence_length])
 
-    #de_predicted
-    de_predicted=[]
-    len_pre_win=int(len(model_data)/prediction_len)
-    len_pre=prediction_len
-    m=0
-    for i in range(0,len_pre_win):
-        for j in range(0,len_pre):
-            de_predicted.append(prediction_seqs[i][j][0]*val_record_max[m]+val_record_min[m])
-            m=m+1
-    error = []
-    diff = np.asarray(data.test_label).shape[0]-prediction_len*pre_win_num
+        val_data_windows = np.array(val_data_windows).astype(float)
+        y_val_ori = val_data_windows[:, -1, [0]]
 
-    for i in range(y_val_ori.shape[0]-diff):
-        error.append(y_val_ori[i,] - de_predicted[i])
-    squaredError = []
-    absError = []
-    for val in error:
-        squaredError.append(val * val) 
-        absError.append(abs(val))
+        val_window_data=val_data_windows
+        val_win_num=val_window_data.shape[0]
+        val_col_num=val_window_data.shape[2]
+        val_normalised_data = []
+        val_record_min=[]
+        val_record_max=[]
 
-    error_percent=[]
-    for i in range(len(error)):
-        val= (absError[i] + y_val_ori[i,]) / 2
-        val=abs(val)
-        error_percent.append(val)
+        for win_i in range(0,val_win_num):
+            normalised_window = []
+            for col_i in range(0,col_num):#col_num):
+                temp_col=val_window_data[win_i,:,col_i]
+                temp_min=min(temp_col)
+                if col_i==0:
+                    val_record_min.append(temp_min)#record min
+                temp_col=temp_col-temp_min
+                temp_max=max(temp_col)
+                if col_i==0:
+                    val_record_max.append(temp_max)#record max
+                temp_col=temp_col/temp_max
+                normalised_window.append(temp_col)
+            for col_i in range(1,val_col_num):
+                temp_col=val_window_data[win_i,:,col_i]
+                normalised_window.append(temp_col)
+            normalised_window = np.array(normalised_window).T
+            val_normalised_data.append(normalised_window)
+        val_normalised_data=np.array(val_normalised_data)
 
-    val_MSE=sum(squaredError) / len(squaredError)
 
-    val_mse_list.append(val_MSE)
-    print('val_MSE: ', val_MSE)
+        model_data = val_data_windows
+        prediction_seqs = []
+        window_size = val_sequence_length
+        pre_win_num = int(len(model_data)/prediction_len)
 
-    #return(f'Test MSE: {sum(test_mse_list) / len(test_mse_list)}, Val MSE: {sum(val_mse_list) / len(val_mse_list)}')
+        for i in range(0,pre_win_num):
+            curr_frame = model_data[i*prediction_len]
+            predicted = []
+            for j in range(0,prediction_len):
+                temp = model.predict(curr_frame[newaxis,:,:])[0]
+                predicted.append(temp)
+                curr_frame = curr_frame[1:]
+                curr_frame = np.insert(curr_frame, [window_size-2], predicted[-1], axis=0)
+            prediction_seqs.append(predicted)
+
+        #de_predicted
+        de_predicted=[]
+        len_pre_win=int(len(model_data)/prediction_len)
+        len_pre=prediction_len
+        m=0
+        for i in range(0,len_pre_win):
+            for j in range(0,len_pre):
+                de_predicted.append(prediction_seqs[i][j][0]*val_record_max[m]+val_record_min[m])
+                m=m+1
+        error = []
+        diff = np.asarray(data.test_label[stock]).shape[0]-prediction_len*pre_win_num
+
+        for i in range(y_val_ori.shape[0]-diff):
+            error.append(y_val_ori[i,] - de_predicted[i])
+        squaredError = []
+        absError = []
+        for val in error:
+            squaredError.append(val * val) 
+            absError.append(abs(val))
+
+        error_percent=[]
+        for i in range(len(error)):
+            val= (absError[i] + y_val_ori[i,]) / 2
+            val=abs(val)
+            error_percent.append(val)
+
+        val_MSE=sum(squaredError) / len(squaredError)
+
+        val_mse_list.append(val_MSE)
+
+    print(f'Test MSE: {sum(test_mse_list) / len(test_mse_list)}, Val MSE: {sum(val_mse_list) / len(val_mse_list)}')
 
